@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모던한 아이젠하워 매트릭스</title>
+    <title>아이젠하워 매트릭스</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -146,7 +146,10 @@
             margin-right: 10px;
             width: 18px;
             height: 18px;
-            border-radius: 50%;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: #888;
         }
         .task-input-row {
             display: flex;
@@ -298,11 +301,22 @@
     </div>
     
     <script>
-        // 할 일 배열
+        // 할 일 배열 (체크 상태 포함)
         let tasks = {
-            1: ['도청'],
-            2: ['오잉'],
-            3: [],
+            1: [
+                { text: '게더리야 침부파일 기능 개발 PR', completed: false },
+                { text: '배타적략(비관적략) 적용 부분 -> 다임 아웃 문제 해결하기', completed: false },
+                { text: '이력서 컨텐츠 수정', completed: false },
+                { text: '포트폴리오 양식 채우기', completed: false },
+                { text: '포트폴리오 양식 만들기', completed: false }
+            ],
+            2: [
+                { text: '카카오톡 클론코딩 깃허브 만들기+ 세팅하기', completed: false }
+            ],
+            3: [
+                { text: '4/10 아침 워크숍 발표', completed: false },
+                { text: '발표자료 만들기', completed: false }
+            ],
             4: []
         };
         
@@ -407,7 +421,7 @@
             const quadrant = selectElement.value;
             
             if (quadrant && ['1', '2', '3', '4'].includes(quadrant)) {
-                tasks[quadrant].push(ideas[index]);
+                tasks[quadrant].push({ text: ideas[index], completed: false });
                 removeIdea(index);
                 renderTasks();
                 generateSVG(); // SVG 업데이트
@@ -427,12 +441,20 @@
             const text = input.value.trim();
             
             if (text) {
-                tasks[quadrant].push(text);
+                tasks[quadrant].push({ text: text, completed: false });
                 input.value = '';
                 renderTasks();
                 saveToLocalStorage();
                 generateSVG(); // SVG 업데이트
             }
+        }
+        
+        // 할 일 완료 상태 토글
+        function toggleTaskCompletion(quadrant, index) {
+            tasks[quadrant][index].completed = !tasks[quadrant][index].completed;
+            renderTasks();
+            saveToLocalStorage();
+            generateSVG(); // SVG 업데이트
         }
         
         // 할 일 삭제
@@ -459,9 +481,13 @@
                     taskItem.className = 'task-item';
                     
                     taskItem.innerHTML = `
-                        <input type="checkbox" class="task-checkbox" id="task-${quadrant}-${index}">
-                        <label for="task-${quadrant}-${index}" style="flex-grow:1;">${task}</label>
-                        <button onclick="removeTask(${quadrant}, ${index})" style="background:none; border:none; color:#E57373; cursor:pointer;">삭제</button>
+                        <input type="checkbox" class="task-checkbox" id="task-${quadrant}-${index}" 
+                            ${task.completed ? 'checked' : ''} 
+                            onchange="toggleTaskCompletion(${quadrant}, ${index})">
+                        <label for="task-${quadrant}-${index}" style="flex-grow:1;" 
+                            class="${task.completed ? 'completed' : ''}">${task.text}</label>
+                        <button onclick="removeTask(${quadrant}, ${index})" 
+                            style="background:none; border:none; color:#E57373; cursor:pointer;">삭제</button>
                     `;
                     
                     container.appendChild(taskItem);
@@ -488,6 +514,10 @@
                         font-size: 14px;
                         font-weight: normal;
                     }
+                    .completed-task {
+                        text-decoration: line-through;
+                        fill: #888;
+                    }
                     .badge {
                         font-size: 14px;
                         font-weight: normal;
@@ -511,9 +541,19 @@
             // 1사분면 할 일 목록
             let y1 = padding*4;
             tasks[1].forEach((task) => {
+                const taskClass = task.completed ? 'task-text completed-task' : 'task-text';
+                const checkState = task.completed ? 'checked' : '';
+                
                 svg += `
-                    <circle cx="${padding*2}" cy="${y1}" r="6" fill="none" stroke="#555" stroke-width="1"/>
-                    <text x="${padding*3.5}" y="${y1 + 5}" class="task-text">${task}</text>`;
+                    <circle cx="${padding*2}" cy="${y1}" r="6" fill="${task.completed ? '#aaa' : 'none'}" stroke="${task.completed ? '#aaa' : '#555'}" stroke-width="1"/>
+                    <text x="${padding*3.5}" y="${y1 + 5}" class="${taskClass}">${task.text}</text>`;
+                
+                if (task.completed) {
+                    // 취소선을 위한 선 추가
+                    const textWidth = task.text.length * 7; // 대략적인 텍스트 너비 계산
+                    svg += `<line x1="${padding*3.5}" y1="${y1 + 1}" x2="${padding*3.5 + textWidth}" y2="${y1 + 1}" stroke="#888" stroke-width="1.5"/>`;
+                }
+                
                 y1 += 25;
             });
             
@@ -526,9 +566,18 @@
             // 2사분면 할 일 목록
             let y2 = padding*4;
             tasks[2].forEach((task) => {
+                const taskClass = task.completed ? 'task-text completed-task' : 'task-text';
+                
                 svg += `
-                    <circle cx="${svgWidth/2 + padding}" cy="${y2}" r="6" fill="none" stroke="#555" stroke-width="1"/>
-                    <text x="${svgWidth/2 + padding*2.5}" y="${y2 + 5}" class="task-text">${task}</text>`;
+                    <circle cx="${svgWidth/2 + padding}" cy="${y2}" r="6" fill="${task.completed ? '#aaa' : 'none'}" stroke="${task.completed ? '#aaa' : '#555'}" stroke-width="1"/>
+                    <text x="${svgWidth/2 + padding*2.5}" y="${y2 + 5}" class="${taskClass}">${task.text}</text>`;
+                
+                if (task.completed) {
+                    // 취소선을 위한 선 추가
+                    const textWidth = task.text.length * 7; // 대략적인 텍스트 너비 계산
+                    svg += `<line x1="${svgWidth/2 + padding*2.5}" y1="${y2 + 1}" x2="${svgWidth/2 + padding*2.5 + textWidth}" y2="${y2 + 1}" stroke="#888" stroke-width="1.5"/>`;
+                }
+                
                 y2 += 25;
             });
             
@@ -541,9 +590,18 @@
             // 3사분면 할 일 목록
             let y3 = svgHeight/2 + padding*3.5;
             tasks[3].forEach((task) => {
+                const taskClass = task.completed ? 'task-text completed-task' : 'task-text';
+                
                 svg += `
-                    <circle cx="${padding*2}" cy="${y3}" r="6" fill="none" stroke="#555" stroke-width="1"/>
-                    <text x="${padding*3.5}" y="${y3 + 5}" class="task-text">${task}</text>`;
+                    <circle cx="${padding*2}" cy="${y3}" r="6" fill="${task.completed ? '#aaa' : 'none'}" stroke="${task.completed ? '#aaa' : '#555'}" stroke-width="1"/>
+                    <text x="${padding*3.5}" y="${y3 + 5}" class="${taskClass}">${task.text}</text>`;
+                
+                if (task.completed) {
+                    // 취소선을 위한 선 추가
+                    const textWidth = task.text.length * 7; // 대략적인 텍스트 너비 계산
+                    svg += `<line x1="${padding*3.5}" y1="${y3 + 1}" x2="${padding*3.5 + textWidth}" y2="${y3 + 1}" stroke="#888" stroke-width="1.5"/>`;
+                }
+                
                 y3 += 25;
             });
             
@@ -555,9 +613,18 @@
             // 4사분면 할 일 목록
             let y4 = svgHeight/2 + padding*3.5;
             tasks[4].forEach((task) => {
+                const taskClass = task.completed ? 'task-text completed-task' : 'task-text';
+                
                 svg += `
-                    <circle cx="${svgWidth/2 + padding}" cy="${y4}" r="6" fill="none" stroke="#555" stroke-width="1"/>
-                    <text x="${svgWidth/2 + padding*2.5}" y="${y4 + 5}" class="task-text">${task}</text>`;
+                    <circle cx="${svgWidth/2 + padding}" cy="${y4}" r="6" fill="${task.completed ? '#aaa' : 'none'}" stroke="${task.completed ? '#aaa' : '#555'}" stroke-width="1"/>
+                    <text x="${svgWidth/2 + padding*2.5}" y="${y4 + 5}" class="${taskClass}">${task.text}</text>`;
+                
+                if (task.completed) {
+                    // 취소선을 위한 선 추가
+                    const textWidth = task.text.length * 7; // 대략적인 텍스트 너비 계산
+                    svg += `<line x1="${svgWidth/2 + padding*2.5}" y1="${y4 + 1}" x2="${svgWidth/2 + padding*2.5 + textWidth}" y2="${y4 + 1}" stroke="#888" stroke-width="1.5"/>`;
+                }
+                
                 y4 += 25;
             });
             
