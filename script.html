@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모던한 아이젠하워 매트릭스</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fafafa;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            font-weight: normal;
+            color: #555;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .brainstorm-section, .matrix-section {
+            border-radius: 8px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .brainstorm-input {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .add-btn {
+            padding: 8px 16px;
+            background-color: #5383EC;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .add-btn:hover {
+            background-color: #4070d8;
+        }
+        .ideas-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .idea-card {
+            background-color: white;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 10px;
+            width: calc(33.333% - 10px);
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .idea-text {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .idea-actions {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #f5f5f5;
+            padding-top: 10px;
+        }
+        .idea-actions select {
+            padding: 6px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #555;
+            background-color: #f9f9f9;
+        }
+        .remove-idea {
+            color: #E57373;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 14px;
+        }
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+            height: 500px;
+        }
+        .matrix-quadrant {
+            border-radius: 6px;
+            padding: 15px;
+            background-color: white;
+            overflow-y: auto;
+            border: 1px solid #eee;
+        }
+        .q1 { background-color: #fff5f5; }
+        .q2 { background-color: #fffbeb; }
+        .q3 { background-color: #f0f7ff; }
+        .q4 { background-color: #f8f9fa; }
+        .quadrant-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            margin-right: 10px;
+            color: white;
+            font-size: 15px;
+        }
+        .badge-1 { background-color: #FF7D7D; }
+        .badge-2 { background-color: #FFBD59; }
+        .badge-3 { background-color: #64B5F6; }
+        .badge-4 { background-color: #B0BEC5; }
+        .task-item {
+            padding: 8px 12px;
+            background-color: white;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            border: 1px solid #eee;
+        }
+        .task-checkbox {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+        }
+        .task-input-row {
+            display: flex;
+            margin-top: 10px;
+        }
+        .task-input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-right: 8px;
+            font-family: inherit;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #matrixSvg {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        /* 타이틀 숨김 */
+        .hide-title {
+            display: none;
+        }
+        
+        /* 모던한 폰트 스타일 */
+        .modern-font {
+            font-weight: normal;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+        
+        @media (max-width: 768px) {
+            .idea-card {
+                width: calc(50% - 10px);
+            }
+            .matrix-grid {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+            }
+            .matrix-quadrant {
+                margin-bottom: 10px;
+                min-height: 150px;
+            }
+        }
+        @media (max-width: 480px) {
+            .idea-card {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>아이젠하워 매트릭스</h1>
+    
+    <div class="container">
+        <!-- 브레인스토밍 섹션 -->
+        <div class="brainstorm-section">
+            <h2 class="modern-font">브레인스토밍</h2>
+            <textarea id="brainstormInput" class="brainstorm-input" placeholder="할 일이나 아이디어를 입력하세요. 엔터 키를 누르면 카드가 생성됩니다."></textarea>
+            <button class="add-btn" onclick="addIdea()">아이디어 추가</button>
+            
+            <div id="ideasContainer" class="ideas-list">
+                <!-- 아이디어 카드가 여기에 추가됩니다 -->
+            </div>
+        </div>
+        
+        <!-- 매트릭스 섹션 -->
+        <div class="matrix-section">
+            <h2 class="modern-font">아이젠하워 매트릭스</h2>
+            
+            <div class="matrix-grid">
+                <!-- 사분면 1: 중요하고 급한 일 -->
+                <div class="matrix-quadrant q1">
+                    <div class="quadrant-header">
+                        <span class="badge badge-1">1</span>
+                        <span class="modern-font">중요하고 급한 일</span>
+                    </div>
+                    <div id="quadrant1" class="task-list">
+                        <!-- 할 일 항목이 여기에 추가됩니다 -->
+                    </div>
+                    <div class="task-input-row">
+                        <input type="text" id="input1" class="task-input" placeholder="할 일 추가...">
+                        <button class="add-btn" onclick="addTaskToQuadrant(1)">추가</button>
+                    </div>
+                </div>
+                
+                <!-- 사분면 2: 중요하지만 급하지 않은 일 -->
+                <div class="matrix-quadrant q2">
+                    <div class="quadrant-header">
+                        <span class="badge badge-2">2</span>
+                        <span class="modern-font">중요하지만 급하지 않음</span>
+                    </div>
+                    <div id="quadrant2" class="task-list">
+                        <!-- 할 일 항목이 여기에 추가됩니다 -->
+                    </div>
+                    <div class="task-input-row">
+                        <input type="text" id="input2" class="task-input" placeholder="할 일 추가...">
+                        <button class="add-btn" onclick="addTaskToQuadrant(2)">추가</button>
+                    </div>
+                </div>
+                
+                <!-- 사분면 3: 중요하지 않지만 급한 일 -->
+                <div class="matrix-quadrant q3">
+                    <div class="quadrant-header">
+                        <span class="badge badge-3">3</span>
+                        <span class="modern-font">중요하지 않지만 급한 일</span>
+                    </div>
+                    <div id="quadrant3" class="task-list">
+                        <!-- 할 일 항목이 여기에 추가됩니다 -->
+                    </div>
+                    <div class="task-input-row">
+                        <input type="text" id="input3" class="task-input" placeholder="할 일 추가...">
+                        <button class="add-btn" onclick="addTaskToQuadrant(3)">추가</button>
+                    </div>
+                </div>
+                
+                <!-- 사분면 4: 중요하지도 급하지도 않은 일 -->
+                <div class="matrix-quadrant q4">
+                    <div class="quadrant-header">
+                        <span class="badge badge-4">😌</span>
+                        <span class="modern-font">중요하지도 급하지도 않음</span>
+                    </div>
+                    <div id="quadrant4" class="task-list">
+                        <!-- 할 일 항목이 여기에 추가됩니다 -->
+                    </div>
+                    <div class="task-input-row">
+                        <input type="text" id="input4" class="task-input" placeholder="할 일 추가...">
+                        <button class="add-btn" onclick="addTaskToQuadrant(4)">추가</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="add-btn" onclick="generateSVG()">SVG 생성</button>
+                <button class="add-btn" onclick="downloadSVG()">SVG 다운로드</button>
+            </div>
+            
+            <div id="matrixSvg">
+                <!-- SVG가 여기에 생성됩니다 -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 할 일 배열
+        let tasks = {
+            1: ['도청'],
+            2: ['오잉'],
+            3: [],
+            4: []
+        };
+        
+        // 아이디어 배열
+        let ideas = [];
+        
+        // 페이지 로드 시 초기화
+        window.onload = function() {
+            // 로컬 스토리지에서 데이터 로드
+            loadFromLocalStorage();
+            
+            // 아이디어와 할 일 렌더링
+            renderIdeas();
+            renderTasks();
+            
+            // 브레인스토밍 입력에 엔터 키 이벤트 추가
+            document.getElementById('brainstormInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    addIdea();
+                }
+            });
+            
+            // 각 사분면 입력에 엔터 키 이벤트 추가
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`input${i}`).addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addTaskToQuadrant(i);
+                    }
+                });
+            }
+            
+            // 초기 SVG 생성
+            generateSVG();
+        };
+        
+        // 로컬 스토리지에 데이터 저장
+        function saveToLocalStorage() {
+            localStorage.setItem('eisenhowerTasks', JSON.stringify(tasks));
+            localStorage.setItem('eisenhowerIdeas', JSON.stringify(ideas));
+        }
+        
+        // 로컬 스토리지에서 데이터 로드
+        function loadFromLocalStorage() {
+            const savedTasks = localStorage.getItem('eisenhowerTasks');
+            const savedIdeas = localStorage.getItem('eisenhowerIdeas');
+            
+            if (savedTasks) {
+                tasks = JSON.parse(savedTasks);
+            }
+            
+            if (savedIdeas) {
+                ideas = JSON.parse(savedIdeas);
+            }
+        }
+        
+        // 아이디어 추가
+        function addIdea() {
+            const input = document.getElementById('brainstormInput');
+            const text = input.value.trim();
+            
+            if (text) {
+                ideas.push(text);
+                input.value = '';
+                renderIdeas();
+                saveToLocalStorage();
+            }
+        }
+        
+        // 아이디어 렌더링
+        function renderIdeas() {
+            const container = document.getElementById('ideasContainer');
+            container.innerHTML = '';
+            
+            ideas.forEach((idea, index) => {
+                const card = document.createElement('div');
+                card.className = 'idea-card';
+                
+                card.innerHTML = `
+                    <div class="idea-text">${idea}</div>
+                    <div class="idea-actions">
+                        <select id="quadrant-select-${index}">
+                            <option value="">사분면 선택...</option>
+                            <option value="1">1 - 중요하고 급한 일</option>
+                            <option value="2">2 - 중요하지만 급하지 않음</option>
+                            <option value="3">3 - 중요하지 않지만 급한 일</option>
+                            <option value="4">4 - 중요하지도 급하지도 않음</option>
+                        </select>
+                        <button class="add-btn" onclick="moveIdeaToQuadrant(${index})">이동</button>
+                        <button class="remove-idea" onclick="removeIdea(${index})">삭제</button>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        // 아이디어를 사분면으로 이동
+        function moveIdeaToQuadrant(index) {
+            const selectElement = document.getElementById(`quadrant-select-${index}`);
+            const quadrant = selectElement.value;
+            
+            if (quadrant && ['1', '2', '3', '4'].includes(quadrant)) {
+                tasks[quadrant].push(ideas[index]);
+                removeIdea(index);
+                renderTasks();
+                generateSVG(); // SVG 업데이트
+            }
+        }
+        
+        // 아이디어 삭제
+        function removeIdea(index) {
+            ideas.splice(index, 1);
+            renderIdeas();
+            saveToLocalStorage();
+        }
+        
+        // 할 일을 사분면에 추가
+        function addTaskToQuadrant(quadrant) {
+            const input = document.getElementById(`input${quadrant}`);
+            const text = input.value.trim();
+            
+            if (text) {
+                tasks[quadrant].push(text);
+                input.value = '';
+                renderTasks();
+                saveToLocalStorage();
+                generateSVG(); // SVG 업데이트
+            }
+        }
+        
+        // 할 일 삭제
+        function removeTask(quadrant, index) {
+            tasks[quadrant].splice(index, 1);
+            renderTasks();
+            saveToLocalStorage();
+            generateSVG(); // SVG 업데이트
+        }
+        
+        // 모든 사분면의 할 일 렌더링
+        function renderTasks() {
+            for (let quadrant = 1; quadrant <= 4; quadrant++) {
+                const container = document.getElementById(`quadrant${quadrant}`);
+                container.innerHTML = '';
+                
+                if (tasks[quadrant].length === 0) {
+                    container.innerHTML = '<div class="task-item" style="color:#999; justify-content:center;">할 일이 없어요</div>';
+                    continue;
+                }
+                
+                tasks[quadrant].forEach((task, index) => {
+                    const taskItem = document.createElement('div');
+                    taskItem.className = 'task-item';
+                    
+                    taskItem.innerHTML = `
+                        <input type="checkbox" class="task-checkbox" id="task-${quadrant}-${index}">
+                        <label for="task-${quadrant}-${index}" style="flex-grow:1;">${task}</label>
+                        <button onclick="removeTask(${quadrant}, ${index})" style="background:none; border:none; color:#E57373; cursor:pointer;">삭제</button>
+                    `;
+                    
+                    container.appendChild(taskItem);
+                });
+            }
+        }
+        
+        // SVG 생성
+        function generateSVG() {
+            const svgWidth = 800;
+            const svgHeight = 600;
+            const padding = 20;
+            
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
+                <style>
+                    text {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+                    }
+                    .quadrant-title {
+                        font-size: 16px;
+                        font-weight: normal;
+                    }
+                    .task-text {
+                        font-size: 14px;
+                        font-weight: normal;
+                    }
+                    .badge {
+                        font-size: 14px;
+                        font-weight: normal;
+                        fill: white;
+                        text-anchor: middle;
+                        dominant-baseline: central;
+                    }
+                </style>
+                
+                <!-- 배경 -->
+                <rect x="${padding}" y="${padding}" width="${svgWidth/2 - padding*1.5}" height="${svgHeight/2 - padding*1.5}" fill="#fff5f5" stroke="#eee" stroke-width="1" rx="6" />
+                <rect x="${svgWidth/2 - padding/2}" y="${padding}" width="${svgWidth/2 - padding*1.5}" height="${svgHeight/2 - padding*1.5}" fill="#fffbeb" stroke="#eee" stroke-width="1" rx="6" />
+                <rect x="${padding}" y="${svgHeight/2 + padding/2}" width="${svgWidth/2 - padding*1.5}" height="${svgHeight/2 - padding*1.5}" fill="#f0f7ff" stroke="#eee" stroke-width="1" rx="6" />
+                <rect x="${svgWidth/2 - padding/2}" y="${svgHeight/2 + padding/2}" width="${svgWidth/2 - padding*1.5}" height="${svgHeight/2 - padding*1.5}" fill="#f8f9fa" stroke="#eee" stroke-width="1" rx="6" />
+                
+                <!-- 1사분면: 중요하고 급한 일 -->
+                <circle cx="${padding*2}" cy="${padding*2}" r="14" fill="#FF7D7D"/>
+                <text x="${padding*2}" y="${padding*2}" class="badge">1</text>
+                <text x="${padding*3.5}" y="${padding*2 + 5}" class="quadrant-title">중요하고 급한 일</text>`;
+                
+            // 1사분면 할 일 목록
+            let y1 = padding*4;
+            tasks[1].forEach((task) => {
+                svg += `
+                    <circle cx="${padding*2}" cy="${y1}" r="6" fill="none" stroke="#555" stroke-width="1"/>
+                    <text x="${padding*3.5}" y="${y1 + 5}" class="task-text">${task}</text>`;
+                y1 += 25;
+            });
+            
+            // 2사분면: 중요하지만 급하지 않음
+            svg += `
+                <circle cx="${svgWidth/2 + padding}" cy="${padding*2}" r="14" fill="#FFBD59"/>
+                <text x="${svgWidth/2 + padding}" y="${padding*2}" class="badge">2</text>
+                <text x="${svgWidth/2 + padding*2.5}" y="${padding*2 + 5}" class="quadrant-title">중요하지만 급하지 않음</text>`;
+                
+            // 2사분면 할 일 목록
+            let y2 = padding*4;
+            tasks[2].forEach((task) => {
+                svg += `
+                    <circle cx="${svgWidth/2 + padding}" cy="${y2}" r="6" fill="none" stroke="#555" stroke-width="1"/>
+                    <text x="${svgWidth/2 + padding*2.5}" y="${y2 + 5}" class="task-text">${task}</text>`;
+                y2 += 25;
+            });
+            
+            // 3사분면: 중요하지 않지만 급한 일
+            svg += `
+                <circle cx="${padding*2}" cy="${svgHeight/2 + padding*1.5}" r="14" fill="#64B5F6"/>
+                <text x="${padding*2}" y="${svgHeight/2 + padding*1.5}" class="badge">3</text>
+                <text x="${padding*3.5}" y="${svgHeight/2 + padding*1.5 + 5}" class="quadrant-title">중요하지 않지만 급한 일</text>`;
+                
+            // 3사분면 할 일 목록
+            let y3 = svgHeight/2 + padding*3.5;
+            tasks[3].forEach((task) => {
+                svg += `
+                    <circle cx="${padding*2}" cy="${y3}" r="6" fill="none" stroke="#555" stroke-width="1"/>
+                    <text x="${padding*3.5}" y="${y3 + 5}" class="task-text">${task}</text>`;
+                y3 += 25;
+            });
+            
+            // 4사분면: 중요하지도 급하지도 않음
+            svg += `
+                <circle cx="${svgWidth/2 + padding}" cy="${svgHeight/2 + padding*1.5}" r="14" fill="#B0BEC5"/>
+                <text x="${svgWidth/2 + padding}" y="${svgHeight/2 + padding*1.5}" class="badge">😌</text>`;
+                
+            // 4사분면 할 일 목록
+            let y4 = svgHeight/2 + padding*3.5;
+            tasks[4].forEach((task) => {
+                svg += `
+                    <circle cx="${svgWidth/2 + padding}" cy="${y4}" r="6" fill="none" stroke="#555" stroke-width="1"/>
+                    <text x="${svgWidth/2 + padding*2.5}" y="${y4 + 5}" class="task-text">${task}</text>`;
+                y4 += 25;
+            });
+            
+            svg += `</svg>`;
+            
+            document.getElementById('matrixSvg').innerHTML = svg;
+            return svg;
+        }
+        
+        // SVG 다운로드
+        function downloadSVG() {
+            const svg = generateSVG();
+            const blob = new Blob([svg], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '아이젠하워_매트릭스.svg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
